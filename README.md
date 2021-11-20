@@ -1,11 +1,20 @@
 # TLS Updates
 
 ```
+git clone git@github.com:ronaldpetty/scheduler.git
+git checkout tls_healthz
 sudo cp /etc/kubernetes/manifests/kube-scheduler.yaml kube-scheduler.yaml.bak
 sudo docker build -t k8s.gcr.io/kube-scheduler:v1.22.4 --no-cache .
 sudo rm /etc/kubernetes/manifests/kube-scheduler.yaml
-sudo cp kube-scheduler.yaml /etc/kubernetes/manifests/kube-scheduler.yaml
+kubectl -n kube-system get pods kube-scheduler-ip-172-31-45-153 #should be gone
+kubectl create deployment nginx3 --image=nginx:1.15.11
+kubectl get deploy nginx3 #should be pending
+sudo cp kube-scheduler.yaml.bak /etc/kubernetes/manifests/kube-scheduler.yaml
+kubectl -n kube-system get pods kube-scheduler-ip-172-31-45-153 #should be back
+kubectl get deploy nginx3 #should be running
 ```
+
+What follows is the original master branch.
 
 
 # scheduler
