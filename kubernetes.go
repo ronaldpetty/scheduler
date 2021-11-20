@@ -15,6 +15,8 @@ package main
 
 import (
 	"bytes"
+	"crypto/tls"
+	b64 "encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,9 +27,12 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"bufio"
+	"os"
 )
 
 var (
+	apiHostTLS        = "172.31.45.153:6443"
 	apiHost           = "127.0.0.1:8001"
 	bindingsEndpoint  = "/api/v1/namespaces/default/pods/%s/binding/"
 	eventsEndpoint    = "/api/v1/namespaces/default/events"
@@ -35,6 +40,55 @@ var (
 	podsEndpoint      = "/api/v1/pods"
 	watchPodsEndpoint = "/api/v1/watch/pods"
 )
+
+func parseSchedulerConf() (string, string, error) {
+	schedFile := "/etc/kubernetes/scheduler.conf"
+	client_certificate_data := "" 
+	client_key_data := "" 
+
+	file, err := os.Open(schedFile)
+	if err != nil { os.Exit(1) }
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		l := scanner.Text()
+	fmt.Println("HERE",l)
+		if strings.Contains(l, "client-certificate-data") {
+	fmt.Println("HERE",l)
+			client_certificate_data = strings.TrimPrefix(l, "    client-certificate-data: ")
+		} else if strings.Contains(l, "client-key-data") {
+	fmt.Println("HERE",l)
+			client_key_data = strings.TrimPrefix(l, "    client-key-data: ")
+	        } else {}
+	}
+
+	fmt.Printf("here\n%s\n%s\n", client_certificate_data, client_key_data)
+
+	return client_certificate_data, client_key_data, nil
+}
+
+var (
+	client_certificate_data, client_key_data, err = parseSchedulerConf()
+
+	certPEM, _ = b64.StdEncoding.DecodeString(client_certificate_data)
+	keyPEM, _  = b64.StdEncoding.DecodeString(client_key_data)
+
+	cert, _ = tls.X509KeyPair(certPEM, keyPEM)
+
+	tr = &http.Transport{
+		TLSClientConfig: &tls.Config{
+			Certificates:       []tls.Certificate{cert},
+			InsecureSkipVerify: true,
+		},
+	}
+	client = &http.Client{Transport: tr}
+	//use client.Do
+)
+
+func init() {
+	fmt.Println(client)
+	getNodes()
+}
 
 func postEvent(event Event) error {
 	var b []byte
@@ -50,14 +104,14 @@ func postEvent(event Event) error {
 		Header:        make(http.Header),
 		Method:        http.MethodPost,
 		URL: &url.URL{
-			Host:   apiHost,
+			Host:   apiHostTLS,
 			Path:   eventsEndpoint,
-			Scheme: "http",
+			Scheme: "https",
 		},
 	}
 	request.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(request)
+	resp, err := client.Do(request)
 	if err != nil {
 		return err
 	}
@@ -74,14 +128,14 @@ func getNodes() (*NodeList, error) {
 		Header: make(http.Header),
 		Method: http.MethodGet,
 		URL: &url.URL{
-			Host:   apiHost,
+			Host:   apiHostTLS,
 			Path:   nodesEndpoint,
-			Scheme: "http",
+			Scheme: "https",
 		},
 	}
 	request.Header.Set("Accept", "application/json, */*")
 
-	resp, err := http.DefaultClient.Do(request)
+	resp, err := client.Do(request)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +144,6 @@ func getNodes() (*NodeList, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return &nodeList, nil
 }
 
@@ -105,17 +158,17 @@ func watchUnscheduledPods() (<-chan Pod, <-chan error) {
 		Header: make(http.Header),
 		Method: http.MethodGet,
 		URL: &url.URL{
-			Host:     apiHost,
+			Host:     apiHostTLS,
 			Path:     watchPodsEndpoint,
 			RawQuery: v.Encode(),
-			Scheme:   "http",
+			Scheme:   "https",
 		},
 	}
 	request.Header.Set("Accept", "application/json, */*")
 
 	go func() {
 		for {
-			resp, err := http.DefaultClient.Do(request)
+			resp, err := client.Do(request)
 			if err != nil {
 				errc <- err
 				time.Sleep(5 * time.Second)
@@ -158,15 +211,15 @@ func getUnscheduledPods() ([]*Pod, error) {
 		Header: make(http.Header),
 		Method: http.MethodGet,
 		URL: &url.URL{
-			Host:     apiHost,
+			Host:     apiHostTLS,
 			Path:     podsEndpoint,
 			RawQuery: v.Encode(),
-			Scheme:   "http",
+			Scheme:   "https",
 		},
 	}
 	request.Header.Set("Accept", "application/json, */*")
 
-	resp, err := http.DefaultClient.Do(request)
+	resp, err := client.Do(request)
 	if err != nil {
 		return unscheduledPods, err
 	}
@@ -195,15 +248,15 @@ func getPods() (*PodList, error) {
 		Header: make(http.Header),
 		Method: http.MethodGet,
 		URL: &url.URL{
-			Host:     apiHost,
+			Host:     apiHostTLS,
 			Path:     podsEndpoint,
 			RawQuery: v.Encode(),
-			Scheme:   "http",
+			Scheme:   "https",
 		},
 	}
 	request.Header.Set("Accept", "application/json, */*")
 
-	resp, err := http.DefaultClient.Do(request)
+	resp, err := client.Do(request)
 	if err != nil {
 		return nil, err
 	}
@@ -344,14 +397,14 @@ func bind(pod *Pod, node Node) error {
 		Header:        make(http.Header),
 		Method:        http.MethodPost,
 		URL: &url.URL{
-			Host:   apiHost,
+			Host:   apiHostTLS,
 			Path:   fmt.Sprintf(bindingsEndpoint, pod.Metadata.Name),
-			Scheme: "http",
+			Scheme: "https",
 		},
 	}
 	request.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(request)
+	resp, err := client.Do(request)
 	if err != nil {
 		return err
 	}

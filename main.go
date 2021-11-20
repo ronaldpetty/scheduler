@@ -14,7 +14,9 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -23,7 +25,24 @@ import (
 
 const schedulerName = "hightower"
 
+func checkError(err error) {
+	if err != nil {
+		log.Println(err)
+		os.Exit(1)
+	}
+}
+
 func main() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	go func() {
+	//	log.Println("Listening healthz over TLS")
+		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprintf(w, "")
+		})
+		err := http.ListenAndServeTLS("localhost:10259", "server.crt", "server.key", nil)
+		checkError(err)
+	}()
+
 	log.Println("Starting custom scheduler...")
 
 	doneChan := make(chan struct{})
@@ -46,4 +65,5 @@ func main() {
 			os.Exit(0)
 		}
 	}
+
 }
