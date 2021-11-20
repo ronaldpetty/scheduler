@@ -1,9 +1,11 @@
 # TLS Updates
 
-`sudo cp /etc/kubernetes/manifests/kube-scheduler.yaml kube-scheduler.yaml.bak`
-`sudo docker build -t k8s.gcr.io/kube-scheduler:v1.22.4 --no-cache  .`
-`sudo rm /etc/kubernetes/manifests/kube-scheduler.yaml`
-`sudo cp kube-scheduler.yaml /etc/kubernetes/manifests/kube-scheduler.yaml`
+```
+sudo cp /etc/kubernetes/manifests/kube-scheduler.yaml kube-scheduler.yaml.bak
+sudo docker build -t k8s.gcr.io/kube-scheduler:v1.22.4 --no-cache .
+sudo rm /etc/kubernetes/manifests/kube-scheduler.yaml
+sudo cp kube-scheduler.yaml /etc/kubernetes/manifests/kube-scheduler.yaml
+```
 
 
 # scheduler
