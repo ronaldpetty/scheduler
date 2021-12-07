@@ -23,7 +23,7 @@ import (
 	"syscall"
 )
 
-const schedulerName = "hightower"
+const schedulerName = "default-scheduler"
 
 func checkError(err error) {
 	if err != nil {
@@ -43,7 +43,7 @@ func main() {
 		checkError(err)
 	}()
 
-	log.Println("Starting custom scheduler...")
+	//log.Println("Starting custom scheduler...")
 
 	doneChan := make(chan struct{})
 	var wg sync.WaitGroup

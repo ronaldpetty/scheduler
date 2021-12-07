@@ -38,21 +38,35 @@ func reconcileUnscheduledPods(interval int, done chan struct{}, wg *sync.WaitGro
 	}
 }
 
+var thisManyInitialFailures = 4 
+var skipHack bool = false
+var e77th8ck3r bool = false
+
 func monitorUnscheduledPods(done chan struct{}, wg *sync.WaitGroup) {
 	pods, errc := watchUnscheduledPods()
 
 	for {
+		thisManyInitialFailures = thisManyInitialFailures - 1
 		select {
 		case err := <-errc:
 			log.Println(err)
 		case pod := <-pods:
-			processorLock.Lock()
-			time.Sleep(2 * time.Second)
-			err := schedulePod(&pod)
-			if err != nil {
-				log.Println(err)
+			e77th8ck3r = !e77th8ck3r
+			if (thisManyInitialFailures <= 0) && (skipHack || e77th8ck3r) {
+				//fmt.Printf("I AM THE CHOOSEN ONE: %v\n", pod)
+				processorLock.Lock()
+				time.Sleep(2 * time.Second)
+				err := schedulePod(&pod)
+				if err != nil {
+					log.Println(err)
+				}
+				processorLock.Unlock()
+			} else {
+				//fmt.Printf("I AM NOT THE CHOOSEN ONE: %v\n", pod)
+				if skipHack {
+					//	fmt.Printf("Hack skip")
+				}
 			}
-			processorLock.Unlock()
 		case <-done:
 			wg.Done()
 			log.Println("Stopped scheduler.")
@@ -88,6 +102,7 @@ func schedulePods() error {
 		return err
 	}
 	for _, pod := range pods {
+		//fmt.Printf("HERE2 %v\n", pod)
 		err := schedulePod(pod)
 		if err != nil {
 			log.Println(err)

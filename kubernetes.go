@@ -52,17 +52,14 @@ func parseSchedulerConf() (string, string, error) {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		l := scanner.Text()
-	fmt.Println("HERE",l)
 		if strings.Contains(l, "client-certificate-data") {
-	fmt.Println("HERE",l)
 			client_certificate_data = strings.TrimPrefix(l, "    client-certificate-data: ")
 		} else if strings.Contains(l, "client-key-data") {
-	fmt.Println("HERE",l)
 			client_key_data = strings.TrimPrefix(l, "    client-key-data: ")
 	        } else {}
 	}
 
-	fmt.Printf("here\n%s\n%s\n", client_certificate_data, client_key_data)
+//	fmt.Printf("here\n%s\n%s\n", client_certificate_data, client_key_data)
 
 	return client_certificate_data, client_key_data, nil
 }
@@ -86,7 +83,7 @@ var (
 )
 
 func init() {
-	fmt.Println(client)
+	//fmt.Println(client)
 	getNodes()
 }
 
@@ -201,6 +198,7 @@ func watchUnscheduledPods() (<-chan Pod, <-chan error) {
 }
 
 func getUnscheduledPods() ([]*Pod, error) {
+//	fmt.Printf("getUnscheduledPods\n")
 	var podList PodList
 	unscheduledPods := make([]*Pod, 0)
 
@@ -229,6 +227,7 @@ func getUnscheduledPods() ([]*Pod, error) {
 	}
 
 	for _, pod := range podList.Items {
+//	fmt.Printf("RON:%v\n", pod)
 		if pod.Metadata.Annotations["scheduler.alpha.kubernetes.io/name"] == schedulerName {
 			unscheduledPods = append(unscheduledPods, &pod)
 		}
@@ -357,7 +356,8 @@ func fit(pod *Pod) ([]Node, error) {
 			LastTimestamp:  timestamp,
 			FirstTimestamp: timestamp,
 			Type:           "Warning",
-			Source:         EventSource{Component: "hightower-scheduler"},
+			Source:         EventSource{Component: "default-scheduler"},
+			//Source:         EventSource{Component: "hightower-scheduler"},
 			InvolvedObject: ObjectReference{
 				Kind:      "Pod",
 				Name:      pod.Metadata.Name,
@@ -373,6 +373,7 @@ func fit(pod *Pod) ([]Node, error) {
 }
 
 func bind(pod *Pod, node Node) error {
+//	fmt.Println("WHY AM I HERE")
 	binding := Binding{
 		ApiVersion: "v1",
 		Kind:       "Binding",
@@ -423,7 +424,8 @@ func bind(pod *Pod, node Node) error {
 		LastTimestamp:  timestamp,
 		FirstTimestamp: timestamp,
 		Type:           "Normal",
-		Source:         EventSource{Component: "hightower-scheduler"},
+		Source:         EventSource{Component: "default-scheduler"},
+		//Source:         EventSource{Component: "hightower-scheduler"},
 		InvolvedObject: ObjectReference{
 			Kind:      "Pod",
 			Name:      pod.Metadata.Name,
