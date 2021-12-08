@@ -39,7 +39,8 @@ func main() {
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, "")
 		})
-		err := http.ListenAndServeTLS("localhost:10259", "server.crt", "server.key", nil)
+		//err := http.ListenAndServeTLS("localhost:10259", "server.crt", "server.key", nil)
+		err := http.ListenAndServeTLS("0.0.0.0:10259", "server.crt", "server.key", nil)
 		checkError(err)
 	}()
 

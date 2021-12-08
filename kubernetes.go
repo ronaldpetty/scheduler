@@ -32,7 +32,8 @@ import (
 )
 
 var (
-	apiHostTLS        = "172.31.45.153:6443"
+	//apiHostTLS        = "172.31.45.153:6443"
+	apiHostTLS        = "10.25.62.131:6443"
 	apiHost           = "127.0.0.1:8001"
 	bindingsEndpoint  = "/api/v1/namespaces/default/pods/%s/binding/"
 	eventsEndpoint    = "/api/v1/namespaces/default/events"
